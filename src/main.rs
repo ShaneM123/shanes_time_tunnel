@@ -2,9 +2,14 @@ use rltk::{RGB, GameState, BLUE3, BTerm, Point};
 use specs::prelude::*;
 use crate::player::{Player, player_input};
 use specs_derive::Component;
+use crate::map::{Map, draw_map};
+use crate::map_indexing_system::MapIndexingSystem;
 
 mod spawner;
 mod player;
+mod map;
+mod rect;
+mod map_indexing_system;
 
 #[derive(Component)]
 pub struct Position {
@@ -35,11 +40,15 @@ impl GameState for State{
         }
         match newrunstate{
             RunState::PlayerTurn => {
+                self.run_systems();
                 player_input(self, ctx);
             }
         }
+        draw_map(&self.ecs, ctx);
+
         let positions = self.ecs.read_storage::<Position>();
         let renderables = self.ecs.read_storage::<Renderable>();
+
 
         for (pos, render) in (&positions, &renderables).join(){
             ctx.set(pos.x,pos.y, render.fg, render.bg, render.glyph);
@@ -48,6 +57,9 @@ impl GameState for State{
 }
 impl State {
     fn run_systems(&mut self){
+        let mut map_index = MapIndexingSystem{};
+        map_index.run_now(&self.ecs);
+        self.ecs.maintain();
     }
 
 }
@@ -66,14 +78,17 @@ fn main() -> rltk::BError{
     gs.ecs.register::<Position>();
     gs.ecs.register::<Renderable>();
 
-    let (player_x, player_y) = (40,25);
+    let map = Map::new_map_rooms_and_corridors();
+
+    let (player_x, player_y) = map.rooms[0].center();
 
     let player_entity = spawner::player(&mut gs.ecs, player_x, player_y);
+    //TODO: insert Monster spawner and player pos point
 
     gs.ecs.insert(player_entity);
-    gs.ecs.insert(Point::new(player_x,player_y));
+    //gs.ecs.insert(Point::new(player_x,player_y));
     gs.ecs.insert(RunState::PlayerTurn);
-
+    gs.ecs.insert(map);
 
     rltk::main_loop(context, gs)
 }
