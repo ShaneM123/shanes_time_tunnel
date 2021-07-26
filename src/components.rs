@@ -38,6 +38,25 @@ pub struct SufferDamage {
     pub amount: Vec<i32>,
 }
 
+#[derive(Component, Debug)]
+pub struct Item {}
+
+#[derive(Component, Debug)]
+pub struct Potion {
+    pub heal_amount: i32,
+}
+
+#[derive(Component,Debug,Clone)]
+pub struct InBackpack {
+    pub owner: Entity,
+}
+
+#[derive(Component, Debug, Clone)]
+pub struct WantsToPickupItem {
+    pub collected_by: Entity,
+    pub item: Entity,
+}
+
 impl SufferDamage {
     pub fn new_damage(store: &mut WriteStorage<SufferDamage>, victim: Entity, amount: i32) {
         if let Some(suffering) = store.get_mut(victim) {
@@ -49,3 +68,4 @@ impl SufferDamage {
         }
     }
 }
+

@@ -5,8 +5,8 @@ use crate::components::Viewshed;
 use crate::player::Player;
 use specs::{World, Join, WorldExt, Entity};
 
-const MAPWIDTH: usize = 80;
-const MAPHEIGHT: usize = 43;
+pub const MAPWIDTH: usize = 80;
+pub const MAPHEIGHT: usize = 43;
 const MAPCOUNT: usize = MAPHEIGHT * MAPWIDTH;
 
 #[derive(PartialEq, Copy, Clone)]
@@ -188,7 +188,7 @@ pub fn draw_map(ecs: &World, ctx: &mut  Rltk){
                     }
                     TileType::Wall => {
                         glyph = rltk::to_cp437('#');
-                        fg = RGB::from_f32(0.,1.0,0.);
+                        fg = RGB::named(rltk::BEIGE);
                     }
                 }
                 if !map.visible_tiles[idx] {

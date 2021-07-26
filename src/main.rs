@@ -5,10 +5,11 @@ use specs_derive::Component;
 use crate::{player::{Player,player_input}, map::{Map,TileType, draw_map},components::Viewshed};
 use crate::visibility_system::VisibilitySystem;
 use crate::Monster_ai_system::MonsterAI;
-use crate::components::{Monster, Name, BlocksTile, CombatStats, WantsToMelee, SufferDamage};
+use crate::components::{Monster, Name, BlocksTile, CombatStats, WantsToMelee, SufferDamage, Item, Potion, InBackpack, WantsToPickupItem};
 use crate::map_indexing_system::MapIndexingSystem;
 use crate::damage_system::DamageSystem;
 use crate::melee_combat_system::MeleeCombatSystem;
+use crate::inventory_system::ItemCollectionSystem;
 
 mod map;
 mod player;
@@ -22,6 +23,7 @@ mod damage_system;
 mod gui;
 mod gamelog;
 mod spawner;
+mod inventory_system;
 
 #[derive(Component)]
 pub struct Position {
@@ -105,6 +107,8 @@ impl State {
         melee_sys.run_now(&self.ecs);
         let mut dmg_sys = DamageSystem{};
         dmg_sys.run_now(&self.ecs);
+        let mut pickup = ItemCollectionSystem{};
+        pickup.run_now(&self.ecs);
         self.ecs.maintain();
     }
 }
@@ -128,6 +132,11 @@ fn main() -> rltk::BError {
     gs.ecs.register::<CombatStats>();
     gs.ecs.register::<WantsToMelee>();
     gs.ecs.register::<SufferDamage>();
+    gs.ecs.register::<Item>();
+    gs.ecs.register::<Potion>();
+    gs.ecs.register::<InBackpack>();
+    gs.ecs.register::<WantsToPickupItem>();
+
 
     let map = Map::new_map_rooms_and_corridors();
     let (player_x, player_y) = map.rooms[0].center();
@@ -135,8 +144,7 @@ fn main() -> rltk::BError {
   let player_entity =  spawner::player(&mut gs.ecs, player_x, player_y);
     gs.ecs.insert(rltk::RandomNumberGenerator::new());
     for room in map.rooms.iter().skip(1){
-        let (x,y) = room.center();
-        spawner::random_monster(&mut gs.ecs, x, y);
+        spawner::spawn_room(&mut gs.ecs, room);
     }
 
     gs.ecs.insert(player_entity);
