@@ -4,7 +4,7 @@ use specs::prelude::*;
 use super::{CombatStats, Player, Renderable, Name, Position, Viewshed, Monster, BlocksTile};
 use crate::rect::Rect;
 use crate::map::MAPWIDTH;
-use crate::components::{Item, Potion};
+use crate::components::{Item, ProvidesHealing, Consumable, Ranged, InflictsDamage, AreaOfEffect, WantsToExplode};
 
 const MAX_MONSTERS: i32 = 4;
 const MAX_ITEMS: i32 = 2;
@@ -55,7 +55,26 @@ pub fn spawn_room(ecs: &mut World, room: &Rect) {
     for idx in item_spwan_points.iter(){
         let x = *idx % MAPWIDTH;
         let y = *idx / MAPWIDTH;
-        heath_potion(ecs, x as i32, y as i32);
+        random_item(ecs, x as i32, y as i32);
+    }
+    for idx in item_spwan_points.iter(){
+        let x = *idx % MAPWIDTH;
+        let y = *idx / MAPWIDTH;
+        random_item(ecs, x as i32, y as i32);
+    }
+}
+
+fn random_item(ecs: &mut World, x: i32, y: i32) {
+    let roll: i32;
+    {
+        let mut rng = ecs.write_resource::<RandomNumberGenerator>();
+        roll = rng.roll_dice(1,4);
+    }
+    match roll {
+        1 => {bomb(ecs, x, y) }
+        2 => { bomb(ecs, x, y)  }
+        3 => { bomb(ecs, x, y) }
+        _ => { bomb(ecs, x, y) }
     }
 }
 
@@ -67,6 +86,7 @@ pub fn player(ecs: &mut World, player_x: i32, player_y: i32) -> Entity {
             glyph: rltk::to_cp437('@'),
             fg: RGB::named(rltk::YELLOW),
             bg: RGB::named(rltk::BLACK),
+            render_order: 0,
         })
         .with(Player{})
         .with(Viewshed{
@@ -75,7 +95,7 @@ pub fn player(ecs: &mut World, player_x: i32, player_y: i32) -> Entity {
             dirty: true,
         })
         .with(Name{name: "Player".to_string()})
-        .with(CombatStats{max_hp: 30, hp: 30, defense: 2, power: 5})
+        .with(CombatStats{max_hp: 100, hp: 100, defense: 2, power: 5})
         .build()
 }
 
@@ -105,6 +125,7 @@ fn monster<S: ToString>(ecs: &mut World, x: i32, y: i32, glyph: rltk::FontCharTy
             glyph,
             fg: RGB::named(rltk::RED),
             bg: RGB::named(rltk::BLACK),
+            render_order: 1,
         })
         .with(Viewshed{visible_tiles: Vec::new(), range: 8, dirty: true})
         .with(Monster{})
@@ -114,16 +135,71 @@ fn monster<S: ToString>(ecs: &mut World, x: i32, y: i32, glyph: rltk::FontCharTy
         .build();
 }
 
-fn heath_potion(ecs: &mut World, x: i32, y: i32) {
+fn health_potion(ecs: &mut World, x: i32, y: i32) {
     ecs.create_entity()
         .with(Position{ x, y })
         .with(Renderable{
             glyph: rltk::to_cp437('+'),
             fg: RGB::named(rltk::GREEN),
             bg: RGB::named(rltk::WHITE),
+            render_order: 2,
         })
         .with(Name{ name: "Health Potion".to_string()})
         .with(Item{})
-        .with(Potion{ heal_amount: 8,})
+        .with(Consumable{})
+        .with(ProvidesHealing { heal_amount: 8,})
+        .build();
+}
+
+fn magic_missile_scroll(ecs: &mut World, x: i32, y: i32,) {
+    ecs.create_entity()
+        .with(Position{ x, y })
+        .with(Renderable{
+            glyph: rltk::to_cp437(')'),
+            fg: RGB::named(rltk::CYAN),
+            bg: RGB::named(rltk::BLACK),
+            render_order: 2,
+        })
+        .with(Name{ name: "Magic Missile Scroll".to_string()})
+        .with(Item{})
+        .with(Consumable{})
+        .with(InflictsDamage{ damage: 10 })
+        .with(Ranged { range: 6,})
+        .build();
+}
+
+fn fireball_scroll(ecs: &mut World, x: i32, y: i32) {
+    ecs.create_entity()
+        .with(Position{ x, y })
+        .with(Renderable{
+            glyph: rltk::to_cp437(')'),
+            fg: RGB::named(rltk::ORANGE),
+            bg: RGB::named(rltk::BLACK),
+            render_order: 2,
+        })
+        .with(Name{ name: "Fireball Scroll".to_string()})
+        .with(Item{})
+        .with(Consumable{})
+        .with(InflictsDamage{ damage: 10 })
+        .with(Ranged { range: 6,})
+        .with(AreaOfEffect{radius: 3})
+        .build();
+}
+
+fn bomb(ecs: &mut World, x: i32, y: i32) {
+    ecs.create_entity()
+        .with(Position{ x, y })
+        .with(Renderable{
+            glyph: rltk::to_cp437('T'),
+            fg: RGB::named(rltk::ORANGE1),
+            bg: RGB::named(rltk::BLACK),
+            render_order: 2,
+        })
+        .with(Name{ name: "Bomb".to_string()})
+        .with(Item{})
+        .with(Consumable{})
+        .with(InflictsDamage{ damage: 10 })
+        .with(WantsToExplode{ set: false, timer: 3})
+        .with(AreaOfEffect{radius: 3})
         .build();
 }
