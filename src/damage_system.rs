@@ -2,10 +2,9 @@
 
 use specs::prelude::*;
 use super::{CombatStats, SufferDamage};
-use crate::player::Player;
 use rltk::console;
 use crate::gamelog::GameLog;
-use crate::components::Name;
+use crate::components::{Name, Player,};
 
 pub struct DamageSystem {}
 

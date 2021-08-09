@@ -1,14 +1,11 @@
 use rltk::{VirtualKeyCode, Rltk, Point, console};
-use crate::{State, Position, Map, map::TileType, components::Viewshed, RunState};
+use crate::{State, Map, map::TileType, components::Viewshed, RunState};
 use specs::{World, WorldExt, Join,};
 use specs::prelude::*;
 use std::cmp::{max, min};
 use specs_derive::Component;
-use crate::components::{CombatStats, WantsToMelee, Item, WantsToPickupItem};
+use crate::components::{CombatStats, WantsToMelee, Item, WantsToPickupItem, Player, Position, };
 use crate::gamelog::GameLog;
-
-#[derive(Component, Debug)]
-pub struct Player {}
 
 pub(crate) fn player_input(gs: &mut State, ctx: &mut Rltk) -> RunState {
     // Player Movement
@@ -53,6 +50,8 @@ pub(crate) fn player_input(gs: &mut State, ctx: &mut Rltk) -> RunState {
 
             VirtualKeyCode::Numpad1 |
             VirtualKeyCode::B => try_move_player(-1, 1, &mut gs.ecs),
+
+            VirtualKeyCode::Escape => return RunState::SaveGame,
 
             _ => { return RunState::AwaitingInput }
         },

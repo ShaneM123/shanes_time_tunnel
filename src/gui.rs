@@ -4,8 +4,8 @@ use specs::prelude::*;
 use super::{CombatStats, Player};
 use crate::gamelog::GameLog;
 use crate::map::Map;
-use crate::components::{Name, InBackpack, Viewshed};
-use crate::{Position, State};
+use crate::components::{Name, Position, InBackpack, Viewshed};
+use crate::{State, RunState};
 
 #[derive(PartialEq,Copy,Clone)]
 pub enum ItemMenuResult {
@@ -13,6 +13,12 @@ pub enum ItemMenuResult {
     NoResponse,
     Selected,
 }
+
+#[derive(PartialEq, Copy, Clone)]
+pub enum MainMenuSelection { NewGame, LoadGame, Quit }
+
+#[derive(PartialEq, Copy, Clone)]
+pub enum MainMenuResult { NoSelection { selected: MainMenuSelection}, Selected { selected: MainMenuSelection } }
 
 pub fn show_inventory(gs: &mut State, ctx: &mut Rltk) -> (ItemMenuResult, Option<Entity>) {
     let player_entity = gs.ecs.fetch::<Entity>();
@@ -224,4 +230,66 @@ pub fn ranged_target(gs: &mut State, ctx: &mut Rltk, range: i32) -> (ItemMenuRes
     }
     (ItemMenuResult::NoResponse, None)
 }
+
+pub fn main_menu(gs: &mut State, ctx: &mut Rltk) -> MainMenuResult {
+    let save_exists = super::saveload_system::does_save_exist();
+    let runstate = gs.ecs.fetch::<RunState>();
+    ctx.print_color_centered(15, RGB::named(rltk::YELLOW), RGB::named(rltk::BLACK), "Shane's First Game");
+
+    if let RunState::MainMenu { menu_selection: selection} = *runstate {
+        if selection == MainMenuSelection::NewGame {
+            ctx.print_color_centered(24, RGB::named(rltk::MAGENTA), RGB::named(rltk::BLACK), "New Game");
+        }
+        else {
+            ctx.print_color_centered(24, RGB::named(rltk::WHITE), RGB::named(rltk::BLACK), "New Game");
+        }
+        if selection == MainMenuSelection::LoadGame {
+            ctx.print_color_centered(25, RGB::named(rltk::MAGENTA), RGB::named(rltk::BLACK), "Load Game");
+        } else {
+            ctx.print_color_centered(25, RGB::named(rltk::WHITE), RGB::named(rltk::BLACK), "Load Game");
+        }
+        if selection == MainMenuSelection::Quit {
+            ctx.print_color_centered(26, RGB::named(rltk::MAGENTA), RGB::named(rltk::BLACK), "Quit");
+        } else {
+            ctx.print_color_centered(26, RGB::named(rltk::WHITE), RGB::named(rltk::BLACK), "Quit");
+        }
+
+        return match ctx.key {
+            None => MainMenuResult::NoSelection { selected: selection },
+            Some(key) => {
+                match key {
+                    VirtualKeyCode::Escape => { MainMenuResult::NoSelection { selected: MainMenuSelection::Quit } }
+                    VirtualKeyCode::Up => {
+                        let mut newselection;
+                        match selection {
+                            MainMenuSelection::NewGame => newselection = MainMenuSelection::Quit,
+                            MainMenuSelection::LoadGame => newselection = MainMenuSelection::NewGame,
+                            MainMenuSelection::Quit => newselection = MainMenuSelection::LoadGame,
+                        }
+                        if newselection == MainMenuSelection::LoadGame && !save_exists {
+                            newselection = MainMenuSelection::NewGame;
+                        }
+                        MainMenuResult::NoSelection { selected: newselection }
+                    },
+                    VirtualKeyCode::Down => {
+                        let mut newselection;
+                        match selection {
+                            MainMenuSelection::NewGame => newselection = MainMenuSelection::LoadGame,
+                            MainMenuSelection::LoadGame => newselection = MainMenuSelection::Quit,
+                            MainMenuSelection::Quit => newselection = MainMenuSelection::NewGame,
+                        }
+                        if newselection == MainMenuSelection::LoadGame && !save_exists {
+                            newselection = MainMenuSelection::NewGame;
+                        }
+                        MainMenuResult::NoSelection { selected: newselection }
+                    },
+                    VirtualKeyCode::Return => MainMenuResult::Selected { selected: selection },
+                    _ => MainMenuResult::NoSelection { selected: selection },
+                }
+            }
+        }
+    };
+    return MainMenuResult::NoSelection { selected: MainMenuSelection::NewGame }
+}
+
 

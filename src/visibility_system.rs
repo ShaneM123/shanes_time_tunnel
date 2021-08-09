@@ -1,5 +1,5 @@
 use specs::prelude::*;
-use crate::{components::Viewshed, Position, map::Map, player::Player};
+use crate::{components::{Viewshed,Position,Player,},  map::Map,};
 use rltk::{field_of_view, Point};
 
 pub struct VisibilitySystem {}

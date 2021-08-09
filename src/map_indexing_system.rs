@@ -1,6 +1,6 @@
 
 use specs::prelude::*;
-use super::{Map, Position, BlocksTile};
+use super::{Map, components::Position, BlocksTile};
 
 pub struct MapIndexingSystem {}
 

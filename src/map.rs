@@ -1,19 +1,18 @@
 use rltk::{Rltk, RGB, RandomNumberGenerator, Algorithm2D, Point, BaseMap};
 use crate::rect::Rect;
 use std::cmp::{max,min};
-use crate::components::Viewshed;
-use crate::player::Player;
-use specs::{World, Join, WorldExt, Entity};
-
+use crate::components::{Viewshed,Player};
+use specs::{World, Join, WorldExt, Entity, saveload::{Marker, ConvertSaveload}, error::NoError};
+use serde::{Serialize, Deserialize};
 pub const MAPWIDTH: usize = 80;
 pub const MAPHEIGHT: usize = 43;
-const MAPCOUNT: usize = MAPHEIGHT * MAPWIDTH;
+pub const MAPCOUNT: usize = MAPHEIGHT * MAPWIDTH;
 
-#[derive(PartialEq, Copy, Clone)]
+#[derive(PartialEq, Copy, Clone, Serialize, Deserialize)]
 pub enum TileType {
     Wall, Floor
 }
-
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Map {
     pub tiles: Vec<TileType>,
     pub rooms: Vec<Rect>,
@@ -22,6 +21,9 @@ pub struct Map {
     pub revealed_tiles: Vec<bool>,
     pub visible_tiles: Vec<bool>,
     pub blocked: Vec<bool>,
+
+    #[serde(skip_serializing)]
+    #[serde(skip_deserializing)]
     pub tile_content: Vec<Vec<Entity>>,
 }
 

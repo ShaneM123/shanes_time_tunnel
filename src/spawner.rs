@@ -1,10 +1,11 @@
 
 use rltk::{ RGB, RandomNumberGenerator};
 use specs::prelude::*;
-use super::{CombatStats, Player, Renderable, Name, Position, Viewshed, Monster, BlocksTile};
+use super::{CombatStats, Renderable, Name, Viewshed, Monster, BlocksTile};
 use crate::rect::Rect;
 use crate::map::MAPWIDTH;
-use crate::components::{Item, ProvidesHealing, Consumable, Ranged, InflictsDamage, AreaOfEffect, WantsToExplode, Protects};
+use crate::components::{Item, Position, Player, ProvidesHealing, Consumable, Ranged, InflictsDamage, AreaOfEffect, WantsToExplode, Protects, SerializeMe};
+use specs::saveload::{MarkedBuilder, SimpleMarker};
 
 const MAX_MONSTERS: i32 = 4;
 const MAX_ITEMS: i32 = 2;
@@ -132,6 +133,7 @@ fn monster<S: ToString>(ecs: &mut World, x: i32, y: i32, glyph: rltk::FontCharTy
         .with(Name{name: name.to_string() })
         .with(BlocksTile{})
         .with(CombatStats{max_hp: 16, hp: 16, defense: 1, power: 4, deflects: 0})
+        .marked::<SimpleMarker<SerializeMe>>()
         .build();
 }
 
@@ -148,6 +150,7 @@ fn health_potion(ecs: &mut World, x: i32, y: i32) {
         .with(Item{})
         .with(Consumable{})
         .with(ProvidesHealing { heal_amount: 8,})
+        .marked::<SimpleMarker<SerializeMe>>()
         .build();
 }
 
@@ -165,6 +168,7 @@ fn magic_missile_scroll(ecs: &mut World, x: i32, y: i32,) {
         .with(Consumable{})
         .with(InflictsDamage{ damage: 10 })
         .with(Ranged { range: 6,})
+        .marked::<SimpleMarker<SerializeMe>>()
         .build();
 }
 
@@ -183,6 +187,7 @@ fn fireball_scroll(ecs: &mut World, x: i32, y: i32) {
         .with(InflictsDamage{ damage: 10 })
         .with(Ranged { range: 6,})
         .with(AreaOfEffect{radius: 3})
+        .marked::<SimpleMarker<SerializeMe>>()
         .build();
 }
 
@@ -201,6 +206,7 @@ fn bomb(ecs: &mut World, x: i32, y: i32) {
         .with(InflictsDamage{ damage: 10 })
         .with(WantsToExplode{ set: false, timer: 3})
         .with(AreaOfEffect{radius: 3})
+        .marked::<SimpleMarker<SerializeMe>>()
         .build();
 }
 
@@ -217,5 +223,6 @@ fn vampire_shield(ecs: &mut World, x: i32, y: i32) {
         .with(Item{})
         .with(Consumable{})
         .with(Protects{ deflections: 3 })
+        .marked::<SimpleMarker<SerializeMe>>()
         .build();
 }

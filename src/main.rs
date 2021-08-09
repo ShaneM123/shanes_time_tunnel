@@ -1,16 +1,28 @@
 use rltk::{GameState, Rltk, RGB, VirtualKeyCode, Point};
-use specs::prelude::*;
+use specs::{prelude::*, saveload::{SimpleMarker, SimpleMarkerAllocator}, };
 use std::cmp::{max, min};
 use specs_derive::Component;
-use crate::{player::{Player,player_input}, map::{Map,TileType, draw_map},components::Viewshed};
-use crate::visibility_system::VisibilitySystem;
-use crate::Monster_ai_system::MonsterAI;
-use crate::components::{Monster, Name, BlocksTile, CombatStats, WantsToMelee, SufferDamage, Item, ProvidesHealing, InBackpack, WantsToPickupItem, WantsToUseItem, WantsToDropItem, Consumable, Ranged, InflictsDamage, AreaOfEffect, WantsToExplode, Protects};
-use crate::map_indexing_system::MapIndexingSystem;
-use crate::damage_system::DamageSystem;
-use crate::melee_combat_system::MeleeCombatSystem;
-use crate::inventory_system::{ItemCollectionSystem, ItemUseSystem, ItemDropSystem};
-use crate::set_explosives::SetExplosiveSystem;
+use crate::{
+    player::{player_input},
+    map::{Map,TileType, draw_map},
+    components::{Viewshed,Monster, Name,
+                 BlocksTile, CombatStats,
+                 WantsToMelee, SufferDamage,
+                 Item, ProvidesHealing,
+                 InBackpack, WantsToPickupItem,
+                 WantsToUseItem, WantsToDropItem,
+                 Consumable, Ranged, InflictsDamage,
+                 AreaOfEffect, WantsToExplode, Protects, Renderable, Position, Player,
+    },
+    visibility_system::VisibilitySystem,
+    Monster_ai_system::MonsterAI,
+    map_indexing_system::MapIndexingSystem,
+    damage_system::DamageSystem,
+    melee_combat_system::MeleeCombatSystem,
+    inventory_system::{ItemCollectionSystem, ItemUseSystem, ItemDropSystem},
+    set_explosives::SetExplosiveSystem,
+};
+use crate::components::{SerializeMe, SerializationHelper};
 
 mod map;
 mod player;
@@ -26,19 +38,8 @@ mod gamelog;
 mod spawner;
 mod inventory_system;
 mod set_explosives;
+mod saveload_system;
 
-#[derive(Component)]
-pub struct Position {
-    x: i32,
-    y: i32,
-}
-#[derive(Component)]
-struct Renderable {
-    glyph: rltk::FontCharType,
-    fg: RGB,
-    bg: RGB,
-    pub render_order: i32,
-}
 
 #[derive(PartialEq, Copy, Clone)]
 pub enum RunState { AwaitingInput,
@@ -47,7 +48,9 @@ pub enum RunState { AwaitingInput,
     MonsterTurn,
     ShowInventory,
     ShowDropItem,
-    ShowTargeting { range: i32, item: Entity}
+    ShowTargeting { range: i32, item: Entity},
+    MainMenu { menu_selection: gui::MainMenuSelection },
+    SaveGame,
 }
 
 pub struct State {
@@ -57,22 +60,35 @@ pub struct State {
 
 impl GameState for State {
     fn tick(&mut self, ctx : &mut Rltk) {
-        ctx.cls();
-        draw_map(&self.ecs, ctx);
+        let mut newrunstate;
         {
-            let positions = self.ecs.read_storage::<Position>();
-            let renderables = self.ecs.read_storage::<Renderable>();
-            let map = self.ecs.fetch::<Map>();
-            let mut data = (&positions, &renderables).join().collect::<Vec<_>>();
-            data.sort_by(|&a, &b| b.1.render_order.cmp(&a.1.render_order));
-            for (pos, render) in data.iter() {
-                let idx = map.xy_idx(pos.x, pos.y);
-                if map.visible_tiles[idx] {
-                    ctx.set(pos.x, pos.y, render.fg, render.bg, render.glyph);
+            let runstate = self.ecs.fetch::<RunState>();
+            newrunstate = *runstate
+        }
+        ctx.cls();
+
+        match newrunstate {
+            RunState::MainMenu {..} => {}
+            _ => {
+                draw_map(&self.ecs, ctx);
+
+                {
+                    let positions = self.ecs.read_storage::<Position>();
+                    let renderables = self.ecs.read_storage::<Renderable>();
+                    let map = self.ecs.fetch::<Map>();
+                    let mut data = (&positions, &renderables).join().collect::<Vec<_>>();
+                    data.sort_by(|&a, &b| b.1.render_order.cmp(&a.1.render_order));
+                    for (pos, render) in data.iter() {
+                        let idx = map.xy_idx(pos.x, pos.y);
+                        if map.visible_tiles[idx] {
+                            ctx.set(pos.x, pos.y, render.fg, render.bg, render.glyph);
+                        }
+                    }
+                    gui::draw_ui(&self.ecs, ctx);
                 }
             }
-            gui::draw_ui(&self.ecs, ctx);
         }
+
         let mut newrunstate;
         {
             let runstate = self.ecs.fetch::<RunState>();
@@ -140,6 +156,26 @@ impl GameState for State {
                     }
 
                 }
+            }
+            RunState::MainMenu {..} => {
+                let result = gui::main_menu(self,ctx);
+                match result {
+                    gui::MainMenuResult::NoSelection { selected } => newrunstate = RunState::MainMenu { menu_selection: selected },
+                    gui::MainMenuResult::Selected { selected } => {
+                    match selected {
+                        gui::MainMenuSelection::NewGame => newrunstate = RunState::PreRun,
+                        gui::MainMenuSelection::LoadGame => {
+                            saveload_system::load_game(&mut self.ecs);
+                            newrunstate = RunState::AwaitingInput;
+                        },
+                        gui::MainMenuSelection::Quit => { ::std::process::exit(0); }
+                    }
+                    }
+                }
+            }
+            RunState::SaveGame => {
+                saveload_system::save_game(&mut self.ecs);
+                newrunstate = RunState::MainMenu {menu_selection: gui::MainMenuSelection::LoadGame};
             }
         }
         {
@@ -209,7 +245,10 @@ fn main() -> rltk::BError {
     gs.ecs.register::<AreaOfEffect>();
     gs.ecs.register::<WantsToExplode>();
     gs.ecs.register::<Protects>();
+    gs.ecs.register::<SimpleMarker<SerializeMe>>();
+    gs.ecs.register::<SerializationHelper>();
 
+    gs.ecs.insert(SimpleMarkerAllocator::<SerializeMe>::new());
 
     let map = Map::new_map_rooms_and_corridors();
     let (player_x, player_y) = map.rooms[0].center();
@@ -224,6 +263,7 @@ fn main() -> rltk::BError {
     gs.ecs.insert(map);
     gs.ecs.insert(Point::new(player_x,player_y));
     gs.ecs.insert(RunState::PreRun);
+    gs.ecs.insert(RunState::MainMenu{ menu_selection: gui::MainMenuSelection::NewGame });
     gs.ecs.insert(gamelog::GameLog{ entries: vec!["Welcome to Shanes First Game!".to_string()]});
 
    rltk::main_loop(context, gs)

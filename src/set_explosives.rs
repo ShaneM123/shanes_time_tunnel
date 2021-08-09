@@ -1,6 +1,6 @@
 use specs::prelude::*;
-use super::{WantsToPickupItem, Name, InBackpack, Position, gamelog::GameLog};
-use crate::components::{ProvidesHealing, CombatStats, WantsToUseItem, WantsToDropItem, Consumable, SufferDamage, InflictsDamage, AreaOfEffect, WantsToExplode};
+use super::{WantsToPickupItem, Name, InBackpack, gamelog::GameLog};
+use crate::components::{ProvidesHealing, CombatStats, Position, WantsToUseItem, WantsToDropItem, Consumable, SufferDamage, InflictsDamage, AreaOfEffect, WantsToExplode};
 use crate::map::Map;
 
 pub struct SetExplosiveSystem {}
