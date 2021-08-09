@@ -4,7 +4,7 @@ use specs::prelude::*;
 use super::{CombatStats, Player, Renderable, Name, Position, Viewshed, Monster, BlocksTile};
 use crate::rect::Rect;
 use crate::map::MAPWIDTH;
-use crate::components::{Item, ProvidesHealing, Consumable, Ranged, InflictsDamage, AreaOfEffect, WantsToExplode};
+use crate::components::{Item, ProvidesHealing, Consumable, Ranged, InflictsDamage, AreaOfEffect, WantsToExplode, Protects};
 
 const MAX_MONSTERS: i32 = 4;
 const MAX_ITEMS: i32 = 2;
@@ -71,9 +71,9 @@ fn random_item(ecs: &mut World, x: i32, y: i32) {
         roll = rng.roll_dice(1,4);
     }
     match roll {
-        1 => {bomb(ecs, x, y) }
-        2 => { bomb(ecs, x, y)  }
-        3 => { bomb(ecs, x, y) }
+        1 => { vampire_shield(ecs, x, y) }
+        2 => { vampire_shield(ecs, x, y)  }
+        3 => { vampire_shield(ecs, x, y) }
         _ => { bomb(ecs, x, y) }
     }
 }
@@ -95,7 +95,7 @@ pub fn player(ecs: &mut World, player_x: i32, player_y: i32) -> Entity {
             dirty: true,
         })
         .with(Name{name: "Player".to_string()})
-        .with(CombatStats{max_hp: 100, hp: 100, defense: 2, power: 5})
+        .with(CombatStats{max_hp: 100, hp: 100, defense: 2, power: 5, deflects: 0})
         .build()
 }
 
@@ -131,7 +131,7 @@ fn monster<S: ToString>(ecs: &mut World, x: i32, y: i32, glyph: rltk::FontCharTy
         .with(Monster{})
         .with(Name{name: name.to_string() })
         .with(BlocksTile{})
-        .with(CombatStats{max_hp: 16, hp: 16, defense: 1, power: 4})
+        .with(CombatStats{max_hp: 16, hp: 16, defense: 1, power: 4, deflects: 0})
         .build();
 }
 
@@ -201,5 +201,21 @@ fn bomb(ecs: &mut World, x: i32, y: i32) {
         .with(InflictsDamage{ damage: 10 })
         .with(WantsToExplode{ set: false, timer: 3})
         .with(AreaOfEffect{radius: 3})
+        .build();
+}
+
+fn vampire_shield(ecs: &mut World, x: i32, y: i32) {
+    ecs.create_entity()
+        .with(Position{ x, y })
+        .with(Renderable{
+            glyph: rltk::to_cp437('V'),
+            fg: RGB::named(rltk::PURPLE),
+            bg: RGB::named(rltk::BLACK),
+            render_order: 2,
+        })
+        .with(Name{ name: "Vampire Shield".to_string()})
+        .with(Item{})
+        .with(Consumable{})
+        .with(Protects{ deflections: 3 })
         .build();
 }

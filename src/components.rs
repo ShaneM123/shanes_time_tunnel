@@ -25,7 +25,8 @@ pub struct CombatStats {
     pub max_hp: i32,
     pub hp: i32,
     pub defense: i32,
-    pub power: i32
+    pub power: i32,
+    pub deflects: i32,
 }
 
 #[derive(Component, Debug, Clone)]
@@ -86,10 +87,16 @@ pub struct AreaOfEffect {
 }
 
 #[derive(Component, Debug)]
+pub struct Protects {
+    pub deflections: i32
+}
+
+#[derive(Component, Debug)]
 pub struct WantsToExplode{
     pub set: bool,
     pub timer: i32,
 }
+
 
 impl SufferDamage {
     pub fn new_damage(store: &mut WriteStorage<SufferDamage>, victim: Entity, amount: i32) {

@@ -5,7 +5,7 @@ use specs_derive::Component;
 use crate::{player::{Player,player_input}, map::{Map,TileType, draw_map},components::Viewshed};
 use crate::visibility_system::VisibilitySystem;
 use crate::Monster_ai_system::MonsterAI;
-use crate::components::{Monster, Name, BlocksTile, CombatStats, WantsToMelee, SufferDamage, Item, ProvidesHealing, InBackpack, WantsToPickupItem, WantsToUseItem, WantsToDropItem, Consumable, Ranged, InflictsDamage, AreaOfEffect, WantsToExplode};
+use crate::components::{Monster, Name, BlocksTile, CombatStats, WantsToMelee, SufferDamage, Item, ProvidesHealing, InBackpack, WantsToPickupItem, WantsToUseItem, WantsToDropItem, Consumable, Ranged, InflictsDamage, AreaOfEffect, WantsToExplode, Protects};
 use crate::map_indexing_system::MapIndexingSystem;
 use crate::damage_system::DamageSystem;
 use crate::melee_combat_system::MeleeCombatSystem;
@@ -208,6 +208,7 @@ fn main() -> rltk::BError {
     gs.ecs.register::<InflictsDamage>();
     gs.ecs.register::<AreaOfEffect>();
     gs.ecs.register::<WantsToExplode>();
+    gs.ecs.register::<Protects>();
 
 
     let map = Map::new_map_rooms_and_corridors();

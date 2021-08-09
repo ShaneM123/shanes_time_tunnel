@@ -1,7 +1,7 @@
 
 use specs::prelude::*;
 use super::{WantsToPickupItem, Name, InBackpack, Position, gamelog::GameLog};
-use crate::components::{ProvidesHealing, CombatStats, WantsToUseItem, WantsToDropItem, Consumable, SufferDamage, InflictsDamage, AreaOfEffect, WantsToExplode};
+use crate::components::{ProvidesHealing, CombatStats, WantsToUseItem, WantsToDropItem, Consumable, SufferDamage, InflictsDamage, AreaOfEffect, WantsToExplode, Protects};
 use crate::map::Map;
 
 pub struct ItemCollectionSystem {}
@@ -49,6 +49,7 @@ impl<'a> System<'a> for ItemUseSystem {
         ReadExpect<'a, Map>,
         WriteStorage<'a, SufferDamage>,
         ReadStorage<'a, AreaOfEffect>,
+        ReadStorage<'a, Protects>,
     );
 
     fn run(&mut self, data: Self::SystemData) {
@@ -63,7 +64,8 @@ impl<'a> System<'a> for ItemUseSystem {
             inflict_damage,
         map,
             mut suffer_damage,
-        aoe) = data;
+        aoe,
+        protects) = data;
 
 
 
@@ -135,6 +137,30 @@ impl<'a> System<'a> for ItemUseSystem {
                             let mob_name = names.get(*mob).unwrap();
                             let item_name = names.get(use_item.item).unwrap();
                             gamelog.entries.push(format!("You use {} on {}, inflicting {} hp", item_name.name, mob_name.name, damage.damage));
+                        }
+                        used_item = true;
+                    }
+                }
+            }
+            let item_protects = protects.get(use_item.item);
+            match item_protects {
+                None => {},
+                Some(protects) => {
+                    used_item = false;
+                    for target in targets.iter() {
+                        let stats = combat_stats.get_mut(*target);
+                        if let Some(stats)= stats {
+                            stats.deflects += protects.deflections;
+                            if entity == *player_entity {
+                                gamelog.entries.push(format!("You drink the {}, adding {} deflections", names.get(use_item.item).unwrap().name, protects.deflections))
+                            }
+                            let consumable = consumables.get(use_item.item);
+                            match consumable {
+                                None => {},
+                                Some(_) => {
+                                    entities.delete(use_item.item).expect("Delete failed");
+                                }
+                            }
                         }
                         used_item = true;
                     }

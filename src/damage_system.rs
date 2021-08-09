@@ -19,7 +19,16 @@ impl<'a> System<'a> for DamageSystem {
         let (mut stats, mut damage) = data;
 
         for (mut stats, damage) in (&mut stats, &damage).join() {
-            stats.hp -= damage.amount.iter().sum::<i32>();
+            //dont inflict damage if the entity has deflections
+            if stats.deflects > 0 {
+                stats.deflects -= 1;
+                if stats.hp < stats.max_hp {
+                    stats.hp += 1;
+                }
+            }
+            else {
+                stats.hp -= damage.amount.iter().sum::<i32>();
+            }
         }
         damage.clear();
     }
