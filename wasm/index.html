@@ -1,0 +1,15 @@
+<html>
+  <head>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type" />
+  </head>
+  <body>
+    <canvas id="canvas" width="640" height="480"></canvas>
+    <script src="./roguelike2021.js"></script>
+    <script>
+      window.addEventListener("load", async () => {
+        await wasm_bindgen("./roguelike2021_bg.wasm");
+      });
+    </script>
+  </body>
+</html>
+
