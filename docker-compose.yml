@@ -1,0 +1,42 @@
+version: "3.3"
+
+services:
+
+  traefik:
+    image: "traefik:v2.5"
+    container_name: "traefik"
+    command:
+      - "--log.level=DEBUG"
+      - "--api.insecure=false"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+      - "--entrypoints.web.http.redirections.entrypoint.permanent=true"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.myhtppchallenge.acme.httpchallenge=true"
+      - "--certificatesresolvers.myhttpchallenge.acme.httpchallenge.entrypoint=web"
+      - "--certificatesresolvers.myhttpchallenge.acme.storage=/letsencrypt/acme.json"
+
+    ports:
+      - "80:80"
+      - "8080:8080"
+      - "443:443"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "/letsencrypt:/letsencrypt"
+
+  roguelike:
+    build:
+      context: .
+    command: python3 /usr/local/bin/server.py
+    container_name: "roguelike_service"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.services.roguelike.loadbalancer.server.port=80"
+      - "traefik.http.routers.roguelike.rule=Host(`shanestimetunnel.com`)"
+      - "traefik.http.routers.roguelike.entrypoints=websecure"
+        #- "traefik.http.routers.roguelike_insecure.middlewares: https-redirect"
+        #- "traefik.http.middlewares.https-redirect.redirectscheme.scheme: https"
+      - "traefik.http.routers.roguelike.tls.certresolver=myhttpchallenge"

@@ -1,0 +1,20 @@
+{
+  "name": "roguelikepack",
+  "version": "1.0.0",
+  "description": "Rogue like game by ShaneM123",
+  "main": "roguelike2021.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node roguelike2021"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ShaneM123/rogueliketutorial2021.git"
+  },
+  "author": "Shane Moloney",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ShaneM123/rogueliketutorial2021/issues"
+  },
+  "homepage": "https://github.com/ShaneM123/rogueliketutorial2021#readme"
+}
