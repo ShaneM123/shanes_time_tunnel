@@ -1,0 +1,52 @@
+
+on:
+  push:
+    branches:
+      - main
+
+name: CD docker images
+
+jobs:
+  cd:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      # Build backend
+      - uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock')}}
+      - uses: actions-rs/toolchain@v1 
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - name: Build rougelike backend
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --locked --release --bins
+      - name: prep name of branch
+        id: branch_name
+        uses: actions/github-script@v3
+        with:
+          script: return context.reg.replace(/refs\/heads\//."")
+          result-encoding: string
+          
+          # Build and deploy images
+      - name: build images
+        env:
+          BRANCH: ${{ steps.branch_name.outputs.result }}
+        run: |
+          docker build -t ghcr.io/shanem123/shanes_time_tunnel:$BRANCH .
+      - name: Push Image
+        env:
+          BRANCH: ${{ steps.branch_name.outputs.result }}
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_TOKEN}}
+        run: |
+          docker login ghcr.io -u "$DOCKER_USERNAME" --password "$DOCKER_TOKEN"
+          docker push ghcr.io/shanem123/shanes_time_tunnel:$BRANCH
