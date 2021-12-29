@@ -1,0 +1,27 @@
+
+version: "3.3"
+services:
+
+  webhook:
+    restart: always
+    build:
+      context: webhook
+      args:
+        - SECRET_WEBHOOK
+        - DOCKER_TOKEN
+        - DOCKER_USERNAME
+    volumes:
+      - .:/roguelike2021
+      - /home/ubuntu/.ssh/id_rsa:/root/.ssh/id_rsa
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - roguelike_network
+    labels:
+      traefik.enable: true
+      traefik.http.routers.webhook.rule: Host(`shanestimetunnel.com`) && PathPrefix(`/hooks/`)
+      traefik.http.routers.webhook.tls.certresolver: myhttpchallenge
+      traefik.http.services.webhook.loadbalancer.server.port: 9000
+
+networks:
+  roguelike_network:
+    external: true

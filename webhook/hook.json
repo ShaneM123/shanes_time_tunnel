@@ -1,0 +1,9 @@
+[
+    {
+        "id": "deploy-$SECRET_WEBHOOK",
+        "execute-command": "/deploy.sh",
+        "command-working-directory": "/roguelike2021",
+        "include-command-output-in-response": true,
+        "include-command-output-in-response-on-error": true
+    }
+]
