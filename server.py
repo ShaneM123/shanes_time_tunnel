@@ -21,6 +21,15 @@ class MyServer(http.server.SimpleHTTPRequestHandler):
         ## self.end_headers()
         return(http.server.SimpleHTTPRequestHandler.do_GET(self.path))
 
+    def do_POST(self):
+        if self.path == '/hooks/':
+        ##    self.path = 'wasm/index.html'
+         self.send_response(200)
+        ## self.send_header("Content-type", "text/html")
+        ## self.end_headers()
+        return(http.server.SimpleHTTPRequestHandler.do_GET(self.path))
+
+
 if __name__ == "__main__":        
    webServer = http.server.HTTPServer((hostName, serverPort), Handler)
     #print("serving at port", PORT)
