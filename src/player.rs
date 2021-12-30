@@ -59,6 +59,17 @@ pub(crate) fn player_input(gs: &mut State, ctx: &mut Rltk) -> RunState {
     return RunState::PlayerTurn
 }
 
+pub fn check_if_dead(state: &mut State)-> bool{
+    let combat_stats = state.ecs.read_storage::<CombatStats>();
+    let players = state.ecs.read_storage::<Player>();
+    for (_player, stats) in (&players, &combat_stats).join() {
+       if stats.hp <= 0 {
+           return true
+       }
+    }
+    false
+}
+
 fn get_item(ecs: &mut World){
     let player_pos = ecs.fetch::<Point>();
     let player_entity = ecs.fetch::<Entity>();

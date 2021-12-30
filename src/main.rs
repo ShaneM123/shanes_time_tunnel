@@ -1,9 +1,9 @@
-use rltk::{GameState, Rltk, RGB, VirtualKeyCode, Point};
+use rltk::{RltkBuilder, GameState, Rltk, RGB, VirtualKeyCode, Point};
 use specs::{prelude::*, saveload::{SimpleMarker, SimpleMarkerAllocator}, };
 use std::cmp::{max, min};
 use specs_derive::Component;
 use crate::{
-    player::{player_input},
+    player::{player_input, check_if_dead},
     map::{Map,TileType, draw_map},
     components::{Viewshed,Monster, Name,
                  BlocksTile, CombatStats,
@@ -51,6 +51,7 @@ pub enum RunState { AwaitingInput,
     ShowTargeting { range: i32, item: Entity},
     MainMenu { menu_selection: gui::MainMenuSelection },
     SaveGame,
+    Dead,
 }
 
 pub struct State {
@@ -59,7 +60,7 @@ pub struct State {
 
 
 impl GameState for State {
-    fn tick(&mut self, ctx : &mut Rltk) {
+    fn tick(&mut self, mut ctx : &mut Rltk) {
         let mut newrunstate;
         {
             let runstate = self.ecs.fetch::<RunState>();
@@ -100,7 +101,12 @@ impl GameState for State {
                 newrunstate = RunState::AwaitingInput;
             }
             RunState::AwaitingInput => {
+                if check_if_dead(self){
+                    newrunstate = RunState::Dead
+                }
+                else{
                 newrunstate = player_input(self, ctx);
+                }
             }
             RunState::PlayerTurn => {
                 self.run_systems();
@@ -177,6 +183,12 @@ impl GameState for State {
                 saveload_system::save_game(&mut self.ecs);
                 newrunstate = RunState::MainMenu {menu_selection: gui::MainMenuSelection::LoadGame};
             }
+            RunState::Dead => {
+                //saveload_system::save_game(&mut self.ecs);
+                self.ecs = setup_game_state("U died :( try again!").ecs;
+              //  ctx.print_color_centered(20, RGB::named(rltk::MAGENTA), RGB::named(rltk::BLACK), "U DIED :(");
+                newrunstate = RunState::PreRun; // {menu_selection: gui::MainMenuSelection::NewGame};
+            }
         }
         {
             let mut runwriter = self.ecs.write_resource::<RunState>();
@@ -214,13 +226,12 @@ impl State {
     }
 }
 
-fn main() -> rltk::BError {
-    use rltk::RltkBuilder;
-    let mut context = RltkBuilder::simple80x50()
-        .with_title("Shane's Roguelike")
-        .build()?;
-    context.with_post_scanlines(true);
+fn setup_context(title: &str,)-> Rltk{    
+    RltkBuilder::simple80x50()
+    .with_title(title)
+    .build().unwrap()}
 
+fn setup_game_state(log: &str,)-> State{
     let mut gs = State{ ecs: World::new() };
 
     gs.ecs.register::<Position>();
@@ -264,7 +275,15 @@ fn main() -> rltk::BError {
     gs.ecs.insert(Point::new(player_x,player_y));
     gs.ecs.insert(RunState::PreRun);
     gs.ecs.insert(RunState::MainMenu{ menu_selection: gui::MainMenuSelection::NewGame });
-    gs.ecs.insert(gamelog::GameLog{ entries: vec!["Welcome to Shanes First Game!".to_string()]});
-
-   rltk::main_loop(context, gs)
+    gs.ecs.insert(gamelog::GameLog{ entries: vec![log.to_string()]});
+    gs
 }
+
+
+fn main() -> rltk::BError {
+   let mut context = setup_context("Shanes Time Tunnel");
+   context.with_post_scanlines(true);
+   let mut gs = setup_game_state("Welcome to Shanes Time Tunnel, inspired by rltk");
+
+    rltk::main_loop(context, gs)
+ }

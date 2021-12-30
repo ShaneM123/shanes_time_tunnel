@@ -35,7 +35,12 @@ macro_rules! deserialize_individually {
     };
 }
 
+#[cfg(target_arch = "wasm32")]
+pub fn save_game(_ecs : &mut World) {
+}
 
+
+#[cfg(not(target_arch = "wasm32"))]
 pub fn save_game(ecs: &mut World){
     let mapcopy = ecs.get_mut::<super::map::Map>().unwrap().clone();
 
@@ -108,6 +113,10 @@ pub fn load_game(ecs: &mut World){
     }
     ecs.delete_entity(deleteme.unwrap()).expect("unable to delete load game helper");
 
+}
+
+pub fn delete_save() {
+    if Path::new("./savegame.json").exists() { std::fs::remove_file("./savegame.json").expect("Unable to delete file"); } 
 }
 
 

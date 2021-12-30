@@ -96,7 +96,7 @@ pub fn player(ecs: &mut World, player_x: i32, player_y: i32) -> Entity {
             dirty: true,
         })
         .with(Name{name: "Player".to_string()})
-        .with(CombatStats{max_hp: 100, hp: 100, defense: 2, power: 5, deflects: 0})
+        .with(CombatStats{max_hp: 110, hp: 80, defense: 2, power: 5, deflects: 0})
         .build()
 }
 
