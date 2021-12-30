@@ -29,8 +29,7 @@ services:
       - "/letsencrypt:/letsencrypt"
 
   roguelike:
-    build:
-      context: .
+    image: "ghcr.io/shanem123/shanes_time_tunnel:main"
     command: python3 /usr/local/bin/server.py
     container_name: "roguelike_service"
     labels:
