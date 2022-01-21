@@ -11,24 +11,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
-      # Build rust backend
-      - uses: actions/cache@v2
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock')}}
-      - uses: actions-rs/toolchain@v1 
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-      - name: Build rougelike backend
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --locked --release --bins
+      # prep branch name
       - name: prep branch name
         id: branch_name
         uses: actions/github-script@v3
@@ -36,7 +19,33 @@ jobs:
           script: return context.ref.replace(/refs\/heads\//, "")
           result-encoding: string
 
-          # Build and deploy images
+      # Build roguelike backend to wasm target
+      - uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock')}}
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: wasm32-unknown-unknown
+          override: true
+      - name: build wasm target binary
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --locked --release --bins --target wasm32-unknown-unknown
+      - name: install wasm
+        uses: actions-rs/cargo@v1
+        with: 
+          command: install 
+          args: -f wasm-bindgen-cli
+      - name: Build rougelike to wasm target
+        run: wasm-bindgen wasm32-unknown-unknown/release/roguelike2021.wasm --out-dir wasm --target web --no-typescript
+
+      # Build and deploy images
       - name: build images
         env:
           BRANCH: ${{ steps.branch_name.outputs.result }}
