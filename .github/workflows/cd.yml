@@ -51,7 +51,9 @@ jobs:
           override: true
       - name: install wasm
         uses: actions-rs/cargo@v1
-        run: install -f wasm-bindgen-cli
+        with: 
+          command: install 
+          args: -f wasm-bindgen-cli
       - name: Build rougelike backend to wasm target
         env:
           BRANCH: ${{ steps.branch_name.outputs.result }}
