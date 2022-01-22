@@ -11,7 +11,6 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
-      # prep branch name
       - name: prep branch name
         id: branch_name
         uses: actions/github-script@v3
@@ -31,6 +30,7 @@ jobs:
         with:
           toolchain: stable
           target: wasm32-unknown-unknown
+          components: cargo
           override: true
       - name: build wasm target binary
         uses: actions-rs/cargo@v1
@@ -43,7 +43,7 @@ jobs:
           command: install 
           args: -f wasm-bindgen-cli
       - name: Build rougelike to wasm target
-        run: wasm-bindgen wasm32-unknown-unknown/release/roguelike2021.wasm --out-dir wasm --target web --no-typescript
+        run: wasm-bindgen ./target/wasm32-unknown-unknown/release/roguelike2021.wasm --out-dir wasm --no-modules --no-typescript
 
       # Build and deploy images
       - name: build images
