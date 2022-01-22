@@ -53,6 +53,12 @@ pub(crate) fn player_input(gs: &mut State, ctx: &mut Rltk) -> RunState {
 
             VirtualKeyCode::Escape => return RunState::SaveGame,
 
+            VirtualKeyCode::Period => {
+                if try_next_level(&mut gs.ecs) {
+                    return RunState::NextLevel;
+                }
+            },
+
             _ => { return RunState::AwaitingInput }
         },
     }
@@ -126,4 +132,17 @@ fn try_move_player(delta_x: i32, delta_y: i32, ecs: &mut World){
         }
     }
 
+}
+
+fn try_next_level(ecs: &mut World)-> bool {
+    let player_pos = ecs.fetch::<Point>();
+    let map = ecs.fetch::<Map>();
+    let palyer_idx = map.xy_idx(player_pos.x, player_pos.y);
+    if map.tiles[palyer_idx] == TileType::DownStairs {
+        true
+    } else {
+        let mut gamelog = ecs.fetch_mut::<GameLog>();
+        gamelog.entries.push("There is no way down from here".to_string());
+        false
+    }
 }

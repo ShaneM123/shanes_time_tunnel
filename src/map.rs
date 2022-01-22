@@ -10,7 +10,7 @@ pub const MAPCOUNT: usize = MAPHEIGHT * MAPWIDTH;
 
 #[derive(PartialEq, Copy, Clone, Serialize, Deserialize)]
 pub enum TileType {
-    Wall, Floor
+    Wall, Floor, DownStairs
 }
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Map {
@@ -21,7 +21,8 @@ pub struct Map {
     pub revealed_tiles: Vec<bool>,
     pub visible_tiles: Vec<bool>,
     pub blocked: Vec<bool>,
-
+    pub depth: i32,
+    
     #[serde(skip_serializing)]
     #[serde(skip_deserializing)]
     pub tile_content: Vec<Vec<Entity>>,
@@ -64,8 +65,18 @@ impl Map {
 
     }
 
-    pub fn new_map_rooms_and_corridors() -> Map {
-        let mut map = Map::default();
+    pub fn new_map_rooms_and_corridors(depth: i32) -> Map {
+        let mut map =        Map{
+            tiles : vec![TileType::Wall; MAPWIDTH*MAPHEIGHT],
+            rooms : Vec::new(),
+            width : MAPWIDTH as i32,
+            height: MAPHEIGHT as i32,
+            revealed_tiles: vec![false; MAPWIDTH*MAPHEIGHT],
+            visible_tiles:  vec![false; MAPWIDTH*MAPHEIGHT],
+            blocked: vec![false; MAPWIDTH*MAPHEIGHT],
+            tile_content : vec![Vec::new(); MAPWIDTH*MAPHEIGHT],
+            depth,
+        };
 
         const MAX_ROOMS: i32 = 30;
         const MIN_SIZE: i32 = 6;
@@ -97,6 +108,10 @@ impl Map {
             }
             map.rooms.push(new_room);
         }
+        let stairs_position = map.rooms[map.rooms.len()-1].center();
+        let stairs_idx = map.xy_idx(stairs_position.0, stairs_position.1);
+        map.tiles[stairs_idx] = TileType::DownStairs;
+
         map
     }
 
@@ -128,6 +143,7 @@ impl Default for Map {
             visible_tiles:  vec![false; MAPWIDTH*MAPHEIGHT],
             blocked: vec![false; MAPWIDTH*MAPHEIGHT],
             tile_content : vec![Vec::new(); MAPWIDTH*MAPHEIGHT],
+            depth: 1,
         } }
 
 }
@@ -191,6 +207,10 @@ pub fn draw_map(ecs: &World, ctx: &mut  Rltk){
                     TileType::Wall => {
                         glyph = rltk::to_cp437('#');
                         fg = RGB::named(rltk::BEIGE);
+                    }
+                    TileType::DownStairs => {
+                        glyph = rltk::to_cp437('>');
+                        fg = RGB::from_f32(0., 1.0, 1.0);
                     }
                 }
                 if !map.visible_tiles[idx] {
