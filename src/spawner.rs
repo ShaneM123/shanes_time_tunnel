@@ -4,80 +4,53 @@ use specs::prelude::*;
 use super::{CombatStats, Renderable, Name, Viewshed, Monster, BlocksTile};
 use crate::rect::Rect;
 use crate::map::MAPWIDTH;
+use crate::random_table::{RandomTable};
 use crate::components::{Item, Position, Player, ProvidesHealing, Consumable, Ranged, InflictsDamage, AreaOfEffect, WantsToExplode, Protects, SerializeMe};
 use specs::saveload::{MarkedBuilder, SimpleMarker};
+use std::collections::HashMap;
 
 const MAX_MONSTERS: i32 = 4;
-const MAX_ITEMS: i32 = 2;
 
-pub fn spawn_room(ecs: &mut World, room: &Rect) {
-    let mut monster_spawn_points: Vec<usize> = Vec::new();
-    let mut item_spwan_points: Vec<usize> = Vec::new();
+pub fn spawn_room(ecs: &mut World, room: &Rect, map_depth: i32) {
+    let spawn_table = room_table(map_depth);
+    let mut spawn_points: HashMap<usize, String> = HashMap::new();
 
-    //Scope to keep the borrow checker happy
-    //TODO: refactor the hell out of this duplicated code
     {
         let mut rng = ecs.write_resource::<RandomNumberGenerator>();
-        let num_monsters = rng.roll_dice(1, MAX_MONSTERS + 2 ) - 3;
-        let num_items = rng.roll_dice(1, MAX_ITEMS + 2 ) - 3;
+        let num_spawns= rng.roll_dice(1,MAX_MONSTERS +3) + (map_depth-1) - 3;
 
-        for _i in 0..num_monsters{
+        for _i in 0..num_spawns{
             let mut added = false;
-            while !added {
+            let mut tries = 0;
+            while !added && tries < 20{
                 let x = (room.x1 + rng.roll_dice(1, i32::abs(room.x2 - room.x1))) as usize;
                 let y = (room.y1 + rng.roll_dice(1, i32::abs(room.y2 - room.y1))) as usize;
                 let idx = (y * MAPWIDTH) + x;
-                if !monster_spawn_points.contains(&idx){
-                    monster_spawn_points.push(idx);
+                if !spawn_points.contains_key(&idx){
+                    spawn_points.insert(idx, spawn_table.roll(&mut rng));
                     added = true;
                 }
-            }
-        }
-        for _i in 0..num_items {
-            let mut added = false;
-            while !added {
-                let x = (room.x1 + rng.roll_dice(1, i32::abs(room.x2 - room.x1))) as usize;
-                let y = (room.y1 + rng.roll_dice(1, i32::abs(room.y2 - room.y1))) as usize;
-                let idx = (y * MAPWIDTH) + x;
-                if !item_spwan_points.contains(&idx) {
-                    item_spwan_points.push(idx);
-                    added = true;
+                else {
+                    tries +=1;
                 }
             }
         }
     }
-    //spawn the monsters
-    for idx in monster_spawn_points.iter(){
-        let x = *idx % MAPWIDTH;
-        let y = *idx / MAPWIDTH;
-        random_monster(ecs, x as i32, y as i32);
-    }
-    //spawn the items
-    for idx in item_spwan_points.iter(){
-        let x = *idx % MAPWIDTH;
-        let y = *idx / MAPWIDTH;
-        random_item(ecs, x as i32, y as i32);
-    }
-    for idx in item_spwan_points.iter(){
-        let x = *idx % MAPWIDTH;
-        let y = *idx / MAPWIDTH;
-        random_item(ecs, x as i32, y as i32);
-    }
+        for spawn in spawn_points.iter() {
+            let x = (*spawn.0 % MAPWIDTH) as i32;
+            let y = (*spawn.0 / MAPWIDTH) as i32;
+
+            match spawn.1.as_ref(){
+                "Goblin" => goblin(ecs,x,y),
+                "Orc" => orc(ecs,x,y),
+                "Health Potion" => health_potion(ecs,x,y),
+                "Magic Missile Scrol"=> magic_missile_scroll(ecs,x,y),
+                "Vampire Shield"=> vampire_shield(ecs,x,y),
+                _ => {}
+            }
+        }
 }
 
-fn random_item(ecs: &mut World, x: i32, y: i32) {
-    let roll: i32;
-    {
-        let mut rng = ecs.write_resource::<RandomNumberGenerator>();
-        roll = rng.roll_dice(1,4);
-    }
-    match roll {
-        1 => { vampire_shield(ecs, x, y) }
-        2 => { vampire_shield(ecs, x, y)  }
-        3 => { vampire_shield(ecs, x, y) }
-        _ => { bomb(ecs, x, y) }
-    }
-}
 
 /// Spawns the player and returns his/her entity object.
 pub fn player(ecs: &mut World, player_x: i32, player_y: i32) -> Entity {
@@ -100,17 +73,16 @@ pub fn player(ecs: &mut World, player_x: i32, player_y: i32) -> Entity {
         .build()
 }
 
-//Spawn a random monster at a given location
-pub fn random_monster(ecs: &mut World, x: i32, y: i32) {
-    let roll: i32;
-    {
-        let mut rng = ecs.write_resource::<RandomNumberGenerator>();
-        roll = rng.roll_dice(1,2);
-    }
-    match roll {
-        1 => { orc(ecs, x, y) }
-        _ => { goblin(ecs, x, y) }
-    }
+
+fn room_table(map_depth: i32) -> RandomTable{
+    RandomTable::new()
+    .add("Goblin", 10)
+    .add("Orc", 1+ map_depth)
+    .add("Health Potion", 7)
+    .add("Magic Missile Scroll", 4)
+    .add("Fireball Scroll", 2 + map_depth)
+    .add("Vampire Shield", 2 + map_depth)
+    // TODO: add bombs
 }
 fn orc(ecs: &mut World, x: i32, y: i32){
     monster(ecs, x, y, rltk::to_cp437('o'), "Orc");
@@ -190,8 +162,8 @@ fn fireball_scroll(ecs: &mut World, x: i32, y: i32) {
         .marked::<SimpleMarker<SerializeMe>>()
         .build();
 }
-
-fn bomb(ecs: &mut World, x: i32, y: i32) {
+//TODO: implement
+fn _bomb(ecs: &mut World, x: i32, y: i32) {
     ecs.create_entity()
         .with(Position{ x, y })
         .with(Renderable{

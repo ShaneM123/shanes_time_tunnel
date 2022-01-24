@@ -39,7 +39,7 @@ mod spawner;
 mod inventory_system;
 mod set_explosives;
 mod saveload_system;
-
+mod random_table;
 
 #[derive(PartialEq, Copy, Clone)]
 pub enum RunState { AwaitingInput,
@@ -245,16 +245,17 @@ impl State {
         }
         //Build a new map and place the player
         let worldmap;
+        let current_depth;
         {
             let mut worldmap_resource = self.ecs.write_resource::<Map>();
-            let current_depth = worldmap_resource.depth;
+            current_depth = worldmap_resource.depth;
             *worldmap_resource = Map::new_map_rooms_and_corridors(current_depth+1);
             worldmap = worldmap_resource.clone();
         }
 
         // spawn baddies
         for room in worldmap.rooms.iter().skip(1) {
-            spawner::spawn_room(&mut self.ecs, room);
+            spawner::spawn_room(&mut self.ecs, room, current_depth + 1);
         }
         // Place player and update resource
         let (player_x, player_y) =worldmap.rooms[0].center();
@@ -310,7 +311,7 @@ impl State {
 fn setup_context(title: &str,)-> Rltk{    
     RltkBuilder::simple80x50()
     .with_title(title)
-    .with_dimensions(200,125)
+    .with_dimensions(190,120)
     .build().unwrap()}
 
 fn setup_game_state(log: &str,)-> State{
@@ -349,7 +350,7 @@ fn setup_game_state(log: &str,)-> State{
   let player_entity =  spawner::player(&mut gs.ecs, player_x, player_y);
     gs.ecs.insert(rltk::RandomNumberGenerator::new());
     for room in map.rooms.iter().skip(1){
-        spawner::spawn_room(&mut gs.ecs, room);
+        spawner::spawn_room(&mut gs.ecs, room, map.depth);
     }
 
     gs.ecs.insert(player_entity);
@@ -365,7 +366,7 @@ fn setup_game_state(log: &str,)-> State{
 fn main() -> rltk::BError {
    let mut context = setup_context("Shanes Time Tunnel");
    context.with_post_scanlines(true);
-   let mut gs = setup_game_state("Welcome to Shanes Time Tunnel, inspired by rltk");
+   let mut gs = setup_game_state("Welcome to Shanes Time Tunnel, inspired by rltk rust guide");
 
     rltk::main_loop(context, gs)
  }
