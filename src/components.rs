@@ -67,6 +67,10 @@ pub struct Item {}
 pub struct ProvidesHealing {
     pub heal_amount: i32,
 }
+#[derive(Component, ConvertSaveload, Clone, Debug)]
+pub struct ProvidesWhack {
+    pub whack_amount: i32,
+}
 
 #[derive(Component, ConvertSaveload, Clone, Debug)]
 pub struct InBackpack {

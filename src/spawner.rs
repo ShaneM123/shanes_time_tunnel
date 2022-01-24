@@ -5,7 +5,7 @@ use super::{CombatStats, Renderable, Name, Viewshed, Monster, BlocksTile};
 use crate::rect::Rect;
 use crate::map::MAPWIDTH;
 use crate::random_table::{RandomTable};
-use crate::components::{Item, Position, Player, ProvidesHealing, Consumable, Ranged, InflictsDamage, AreaOfEffect, WantsToExplode, Protects, SerializeMe};
+use crate::components::{Item, Position, Player, ProvidesHealing,ProvidesWhack, Consumable, Ranged, InflictsDamage, AreaOfEffect, WantsToExplode, Protects, SerializeMe};
 use specs::saveload::{MarkedBuilder, SimpleMarker};
 use std::collections::HashMap;
 
@@ -45,6 +45,7 @@ pub fn spawn_room(ecs: &mut World, room: &Rect, map_depth: i32) {
                 "Orc" => orc(ecs,x,y),
                 "Health Potion" => health_potion(ecs,x,y),
                 "Magic Missile Scrol"=> magic_missile_scroll(ecs,x,y),
+                "Team Lead Fire Sword" => team_lead_fire_sword(ecs,x,y),
                 "Vampire Shield"=> vampire_shield(ecs,x,y),
                 _ => {}
             }
@@ -77,8 +78,9 @@ pub fn player(ecs: &mut World, player_x: i32, player_y: i32) -> Entity {
 fn room_table(map_depth: i32) -> RandomTable{
     RandomTable::new()
     .add("Goblin", 10)
+    .add("Team Lead Fire Sword", 2+map_depth)
     .add("Orc", 1+ map_depth)
-    .add("Health Potion", 7)
+    .add("Health Potion", 6)
     .add("Magic Missile Scroll", 4)
     .add("Fireball Scroll", 2 + map_depth)
     .add("Vampire Shield", 2 + map_depth)
@@ -195,6 +197,24 @@ fn vampire_shield(ecs: &mut World, x: i32, y: i32) {
         .with(Item{})
         .with(Consumable{})
         .with(Protects{ deflections: 3 })
+        .marked::<SimpleMarker<SerializeMe>>()
+        .build();
+}
+
+
+fn team_lead_fire_sword(ecs: &mut World, x: i32, y: i32) {
+    ecs.create_entity()
+        .with(Position{ x, y })
+        .with(Renderable{
+            glyph: rltk::to_cp437('T'),
+            fg: RGB::named(rltk::ORANGE),
+            bg: RGB::named(rltk::BLUE),
+            render_order: 2,
+        })
+        .with(Name{ name: "Team Lead Fire Sword".to_string()})
+        .with(Item{})
+        .with(Consumable{})
+        .with(ProvidesWhack{whack_amount: 25 })
         .marked::<SimpleMarker<SerializeMe>>()
         .build();
 }

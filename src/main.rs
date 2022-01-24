@@ -8,6 +8,7 @@ use crate::{
     components::{Viewshed,Monster, Name,
                  BlocksTile, CombatStats,
                  WantsToMelee, SufferDamage,
+                 ProvidesWhack,
                  Item, ProvidesHealing,
                  InBackpack, WantsToPickupItem,
                  WantsToUseItem, WantsToDropItem,
@@ -339,6 +340,7 @@ fn setup_game_state(log: &str,)-> State{
     gs.ecs.register::<AreaOfEffect>();
     gs.ecs.register::<WantsToExplode>();
     gs.ecs.register::<Protects>();
+    gs.ecs.register::<ProvidesWhack>();
     gs.ecs.register::<SimpleMarker<SerializeMe>>();
     gs.ecs.register::<SerializationHelper>();
 

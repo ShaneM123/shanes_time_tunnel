@@ -58,7 +58,7 @@ pub fn save_game(ecs: &mut World){
         let mut serializer = serde_json::Serializer::new(writer);
         serialize_individually!(ecs, serializer, data, Position, Renderable, Player, Viewshed, Monster,
             Name, BlocksTile, CombatStats, SufferDamage, WantsToMelee, Item, Consumable, Ranged, InflictsDamage,
-            AreaOfEffect, Protects, ProvidesHealing, InBackpack, WantsToPickupItem, WantsToUseItem,
+            AreaOfEffect, Protects, ProvidesHealing, ProvidesWhack, InBackpack, WantsToPickupItem, WantsToUseItem,
             WantsToDropItem, SerializationHelper
         );
     }
@@ -88,7 +88,7 @@ pub fn load_game(ecs: &mut World){
 
         deserialize_individually!(ecs, de, d, Position, Renderable, Player, Viewshed, Monster,
             Name, BlocksTile, CombatStats, SufferDamage, WantsToMelee, Item, Consumable, Ranged, InflictsDamage,
-            AreaOfEffect, Protects, ProvidesHealing, InBackpack, WantsToPickupItem, WantsToUseItem,
+            AreaOfEffect, Protects, ProvidesHealing, ProvidesWhack, InBackpack, WantsToPickupItem, WantsToUseItem,
             WantsToDropItem, SerializationHelper
         );
     }

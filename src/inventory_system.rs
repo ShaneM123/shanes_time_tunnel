@@ -1,7 +1,7 @@
 
 use specs::prelude::*;
 use super::{WantsToPickupItem, Name, InBackpack,  gamelog::GameLog};
-use crate::components::{ProvidesHealing, CombatStats, Position, WantsToUseItem, WantsToDropItem, Consumable, SufferDamage, InflictsDamage, AreaOfEffect, WantsToExplode, Protects};
+use crate::components::{ProvidesHealing,ProvidesWhack, CombatStats, Position, WantsToUseItem, WantsToDropItem, Consumable, SufferDamage, InflictsDamage, AreaOfEffect, WantsToExplode, Protects};
 use crate::map::Map;
 
 pub struct ItemCollectionSystem {}
@@ -50,6 +50,7 @@ impl<'a> System<'a> for ItemUseSystem {
         WriteStorage<'a, SufferDamage>,
         ReadStorage<'a, AreaOfEffect>,
         ReadStorage<'a, Protects>,
+        ReadStorage<'a, ProvidesWhack>,
     );
 
     fn run(&mut self, data: Self::SystemData) {
@@ -65,7 +66,7 @@ impl<'a> System<'a> for ItemUseSystem {
         map,
             mut suffer_damage,
         aoe,
-        protects) = data;
+        protects,whack) = data;
 
 
 
@@ -109,6 +110,30 @@ impl<'a> System<'a> for ItemUseSystem {
                             stats.hp = i32::min(stats.max_hp, stats.hp + healer.heal_amount);
                             if entity == *player_entity {
                                 gamelog.entries.push(format!("You drink the {}, healing {} hp", names.get(use_item.item).unwrap().name, healer.heal_amount))
+                            }
+                            let consumable = consumables.get(use_item.item);
+                            match consumable {
+                                None => {},
+                                Some(_) => {
+                                    entities.delete(use_item.item).expect("Delete failed");
+                                }
+                            }
+                        }
+                        used_item = true;
+                    }
+                }
+            }
+            let item_whacks = whack.get(use_item.item);
+            match item_whacks {
+                None => {},
+                Some(whack) => {
+                    used_item = false;
+                    for target in targets.iter() {
+                        let stats = combat_stats.get_mut(*target);
+                        if let Some(stats)= stats {
+                            stats.power = i32::max(stats.power, stats.power + whack.whack_amount);
+                            if entity == *player_entity {
+                                gamelog.entries.push(format!("You bound by fire to the {}, the power of {} flows through", names.get(use_item.item).unwrap().name, whack.whack_amount))
                             }
                             let consumable = consumables.get(use_item.item);
                             match consumable {
